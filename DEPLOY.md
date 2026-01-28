@@ -1,65 +1,57 @@
-# 🚀 如何免费发布你的应用 (Deployment Guide)
+# 🚀 安全发布指南 (Secure Deployment Guide)
 
-要将这个应用发布到互联网上，最简单且免费的方式是使用 **Vercel**。它完美支持 Vite + React 项目，并且提供免费的 SSL 证书和全球 CDN。
+为了保护你的 API Key 不被盗用，并防止陌生人消耗你的额度，我们采用了 **"后端代理 + 访问密码"** 的安全架构。
 
-## ⚠️ 安全警告
-你的 API Key 非常敏感！**千万不要**把它直接提交到 GitHub 公开仓库。
-我已经帮你把 Key 移到了 `.env.local` 文件中，并且在 `.gitignore` 中配置了忽略。这样你在本地开发时依然可用，但上传代码时不会泄露 Key。
+## ⚠️ 核心变化
+- **本地开发 (Dev)**: 前端直接调用 OpenRouter，使用 `.env.local` 中的 Key 和密码。
+- **线上环境 (Prod)**: 前端请求发给 Vercel 后端 (`/api/chat`)，后端验证密码后再调用 OpenRouter。**Key 永远不会暴露给浏览器**。
 
 ---
 
-## 第一步：准备代码 (Push to GitHub)
+## 第一步：推送到 GitHub
 
-1.  **初始化 Git 仓库** (如果你还没做):
+1.  **提交代码**:
     ```bash
-    git init
     git add .
-    git commit -m "Initial commit - Ready for deployment"
-    ```
-
-2.  **创建 GitHub 仓库**:
-    *   登录 [GitHub](https://github.com)。
-    *   点击右上角 "+" -> "New repository"。
-    *   输入仓库名 (例如 `pa-trainer`)。
-    *   **建议选择 Private (私有)**，虽然我们做了安全措施，但私有仓库更保险。
-    *   点击 "Create repository"。
-
-3.  **上传代码**:
-    *   按照 GitHub 页面上的提示，执行以下命令（替换你的仓库地址）:
-    ```bash
-    git remote add origin https://github.com/你的用户名/pa-trainer.git
-    git branch -M main
-    git push -u origin main
+    git commit -m "Security Upgrade: Add Backend Proxy and Lock Screen"
+    git push
     ```
 
 ---
 
-## 第二步：发布到 Vercel (One-Click Deploy)
+## 第二步：在 Vercel 设置环境变量 (关键!)
 
-1.  **注册/登录 Vercel**:
-    *   访问 [vercel.com](https://vercel.com)。
-    *   使用 GitHub 账号登录（最方便）。
+由于架构升级，你需要去 Vercel 控制台更新环境变量。
 
-2.  **导入项目**:
-    *   在 Vercel 控制台点击 **"Add New..."** -> **"Project"**.
-    *   在列表中找到你刚才创建的 GitHub 仓库 (`pa-trainer`)，点击 **"Import"**。
+1.  登录 [Vercel Dashboard](https://vercel.com/dashboard)。
+2.  进入你的项目 -> **Settings** -> **Environment Variables**。
+3.  **添加/修改以下变量** (注意：不要带 `VITE_` 前缀，这是给后端用的)：
 
-3.  **配置环境变量 (Environment Variables)**:
-    *   在 "Configure Project" 页面，找到 **"Environment Variables"** 区域。
-    *   添加你的 API Key：
-        *   **Key**: `VITE_OPENROUTER_API_KEY`
-        *   **Value**: `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`
-    *   点击 **"Add"**。
+| Variable Name | Value (示例) | 说明 |
+| :--- | :--- | :--- |
+| `OPENROUTER_API_KEY` | `sk-or-v1-......` | 你的 OpenRouter 完整 Key。**这是给后端用的，绝对安全。** |
+| `SITE_PASSWORD` | `123456` | 设置一个你的专属访问密码。用户必须输入此密码才能使用 AI。 |
 
-4.  **点击 Deploy**:
-    *   点击蓝色的 **"Deploy"** 按钮。
-    *   等待约 1 分钟，烟花绽放，你的应用就上线了！🎉
+4.  **重要：删除旧变量** (如果有)
+    *   如果你之前设置了 `VITE_OPENROUTER_API_KEY`，建议在 Vercel 上**删除它**。生产环境不需要它了，留着反而有风险。
 
 ---
 
-## 常见问题
+## 第三步：重新部署 (Redeploy)
 
-*   **更新代码怎么办？**
-    *   只需要在本地修改代码，然后 `git push` 到 GitHub，Vercel 会自动检测并重新部署更新的版本。
-*   **语音输入在手机上能用吗？**
-    *   Vercel 提供的域名是 `https` 的，这满足了浏览器的安全要求。但是，请确保你的手机网络能访问 Google 服务（因为使用了 Chrome 语音识别），否则语音功能可能在手机上无法使用。文本输入功能则不受影响。
+环境变量修改后，通常需要重新部署才会生效。
+
+1.  在 Vercel 项目页面，点击 **Deployments** 标签。
+2.  找到最近的一次部署（或者点击右上角三个点 -> **Redeploy**）。
+3.  等待部署完成。
+
+---
+
+## ✅ 验证是否成功
+
+1.  打开你的 Vercel 网址。
+2.  你应该会看到一个 **"Access Required" (需要访问权限)** 的锁屏界面。
+3.  输入你在 Vercel 设置的 `SITE_PASSWORD` (例如 `123456`)。
+4.  进入后，尝试发送一条消息。
+    *   如果成功回复，说明 **后端代理** 运作正常！
+    *   此时，你的 API Key 是隐藏在 Vercel 服务器上的，黑客无法从浏览器通过 F12 偷走它。

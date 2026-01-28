@@ -2,9 +2,18 @@ import { useState, useEffect, useRef } from 'react'
 import { generateData, getRandomSlice } from './utils/dataGenerator'
 import { saveSession, getHistory, createSessionId, deleteSession } from './utils/historyManager'
 import { ChartComponent } from './components/ChartComponent'
+import { LockScreen } from './components/LockScreen'
 import './App.css'
 
 function App() {
+  // Auth State
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+      return !!localStorage.getItem('pa_trainer_auth');
+  });
+  const [sitePassword, setSitePassword] = useState(() => {
+      return localStorage.getItem('pa_trainer_auth') || '';
+  });
+
   const [fullData, setFullData] = useState([]);
   const [currentSlice, setCurrentSlice] = useState([]);
   const [sessionId, setSessionId] = useState(null); // Track current session
@@ -190,6 +199,12 @@ function App() {
     }
   };
 
+  const handleUnlock = (password) => {
+      setSitePassword(password);
+      setIsAuthorized(true);
+      localStorage.setItem('pa_trainer_auth', password);
+  };
+
   const analyzeWithAI = async (manualInput = null) => {
     // This function simulates the backend logic
     // It constructs the prompt that WOUL be sent to the LLM
@@ -234,99 +249,120 @@ ${focusPoint}
     setTranscript('');
     setInterimTranscript('');
 
-    // Real API Call if Key exists
-    if (apiKey) {
-        try {
-            // Prepare messages for API (include history)
-            const apiMessages = [
-                { role: "system", content: systemPrompt },
-                ...messages.map(m => ({ 
-                    role: m.role, 
-                    content: m.thinking ? `${m.thinking}\n${m.content}` : m.content 
-                })),
-                { role: "user", content: userPrompt }
-            ];
+    try {
+        // Prepare messages for API (include history)
+        const apiMessages = [
+            { role: "system", content: systemPrompt },
+            ...messages.map(m => ({ 
+                role: m.role, 
+                content: m.thinking ? `${m.thinking}\n${m.content}` : m.content 
+            })),
+            { role: "user", content: userPrompt }
+        ];
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
 
-            let modelToUse = "google/gemini-2.0-flash-001"; // Default fallback
-            // Try user specific model first? No, use safe default or what works.
-            // User requested: google/gemini-3-flash-preview
-            // If we are getting Network Error, model doesn't matter.
-            // If we are getting 404/400, model matters.
+        let response;
+        
+        // Determine Mode: Dev (Direct) vs Prod (Proxy)
+        const isDev = import.meta.env.DEV;
+        
+        if (isDev) {
+            // --- Local Development Mode (Direct OpenRouter) ---
+            // Verify Local Password first
+            if (sitePassword !== import.meta.env.VITE_SITE_PASSWORD) {
+                throw new Error("Incorrect Password (Local Check)");
+            }
             
-            // Let's use the requested one, but wrap in better error handling.
-            modelToUse = "google/gemini-2.0-flash-001"; // Fallback to safe one if 3 is suspicious
-            // Actually, let's stick to what user asked but provide clear error if it fails.
-            modelToUse = "google/gemini-2.0-flash-001"; // Safest bet for now to unblock "loading"
-            
-            // Wait, user explicitly asked for gemini-3. 
-            // I will use it.
-            modelToUse = "google/gemini-2.0-flash-001"; 
+            const localApiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+            if (!localApiKey) throw new Error("VITE_OPENROUTER_API_KEY not found in .env.local");
 
-            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`,
+                    'Authorization': `Bearer ${localApiKey}`,
                     'HTTP-Referer': window.location.href,
                     'X-Title': 'Walk & Trade',
                 },
                 body: JSON.stringify({
-                    model: "google/gemini-2.0-flash-001", // Using stable model to fix hanging
+                    model: "google/gemini-2.0-flash-001",
                     messages: apiMessages,
                     temperature: 0.7
                 }),
                 signal: controller.signal
             });
-            
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error?.message || `API Error: ${response.status}`);
-            }
-
-            const data = await response.json();
-            
-            if (data.error) {
-                throw new Error(JSON.stringify(data.error));
-            }
-
-            const rawReply = data.choices[0].message.content;
-            
-            // Parse Thinking
-            let thinking = '';
-            let content = rawReply;
-            const thinkingMatch = rawReply.match(/<thinking>([\s\S]*?)<\/thinking>/);
-            if (thinkingMatch) {
-                thinking = thinkingMatch[1].trim();
-                content = rawReply.replace(thinkingMatch[0], '').trim();
-            }
-
-            setMessages(prev => [...prev, { role: 'assistant', content, thinking }]);
-
-        } catch (error) {
-            console.error("LLM Error:", error);
-            let errorMsg = error.message;
-            if (error.name === 'AbortError') {
-                errorMsg = "Network Timeout: The request took too long. Check your connection.";
-            } else if (error.message.includes('Failed to fetch')) {
-                errorMsg = "Network Error: Could not connect to OpenRouter. Please check your VPN/Proxy.";
-            }
-            setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${errorMsg}` }]);
-        } finally {
-            setIsLoading(false);
+        } else {
+            // --- Production Mode (Backend Proxy) ---
+            response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-site-password': sitePassword
+                },
+                body: JSON.stringify({
+                    messages: apiMessages,
+                    temperature: 0.7
+                }),
+                signal: controller.signal
+            });
         }
-    } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: "Please enter an API Key in Settings to start." }]);
+        
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            
+            // Handle Auth Failure
+            if (response.status === 401) {
+                setIsAuthorized(false);
+                localStorage.removeItem('pa_trainer_auth');
+                throw new Error("Password Incorrect or Session Expired. Please login again.");
+            }
+            
+            throw new Error(errorData.error?.message || errorData.error || `API Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(JSON.stringify(data.error));
+        }
+
+        const rawReply = data.choices[0].message.content;
+        
+        // Parse Thinking
+        let thinking = '';
+        let content = rawReply;
+        const thinkingMatch = rawReply.match(/<thinking>([\s\S]*?)<\/thinking>/);
+        if (thinkingMatch) {
+            thinking = thinkingMatch[1].trim();
+            content = rawReply.replace(thinkingMatch[0], '').trim();
+        }
+
+        setMessages(prev => [...prev, { role: 'assistant', content, thinking }]);
+
+    } catch (error) {
+        console.error("LLM Error:", error);
+        let errorMsg = error.message;
+        if (error.name === 'AbortError') {
+            errorMsg = "Network Timeout: The request took too long. Check your connection.";
+        } else if (error.message.includes('Failed to fetch')) {
+            errorMsg = "Network Error: Could not connect to API. Please check your VPN/Proxy.";
+        }
+        setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${errorMsg}` }]);
+    } finally {
         setIsLoading(false);
     }
   };
 
+  if (!isAuthorized) {
+      return <LockScreen onUnlock={handleUnlock} />;
+  }
+
   return (
-    <>
+    <div className="app-container main-layout">
       {/* Header */}
       <header className="app-header">
           <div className="logo">
@@ -516,7 +552,7 @@ ${focusPoint}
           </div>
 
       </div>
-    </>
+    </div>
   )
 }
 
