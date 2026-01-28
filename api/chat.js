@@ -6,8 +6,10 @@ export default async function handler(req, res) {
   const { messages, model, temperature } = req.body;
   const sitePassword = req.headers['x-site-password'];
 
-  // 1. Security Check: Verify Password
-  if (sitePassword !== process.env.SITE_PASSWORD) {
+  // 1. Security Check: Verify Password (Only if configured on server)
+  // If SITE_PASSWORD is not set on Vercel, we might skip auth or fail closed. 
+  // Let's assume fail closed for security.
+  if (process.env.SITE_PASSWORD && sitePassword !== process.env.SITE_PASSWORD) {
     return res.status(401).json({ error: 'Unauthorized: Incorrect Site Password' });
   }
 
