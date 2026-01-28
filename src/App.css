@@ -1,0 +1,564 @@
+:root {
+  --primary: #2962FF; /* TradingView Blue */
+  --primary-soft: #E3F2FD;
+  --surface: #FFFFFF;
+  --background: #F8F9FA;
+  --text-main: #1A1A1A;
+  --text-secondary: #757575;
+  --border: #E0E0E0;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --chart-up: #089981;
+  --chart-down: #F23645;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--background);
+  color: var(--text-main);
+  height: 100vh;
+  overflow: hidden;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Header --- */
+.app-header {
+  height: 60px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  width: 24px;
+  height: 24px;
+  background: var(--primary);
+  border-radius: 6px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.header-actions button {
+  background: transparent;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--text-main);
+  border-radius: 50%;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-actions button:hover {
+  background: var(--background);
+}
+
+/* --- Main Layout --- */
+.main-container {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+/* --- Chart Area --- */
+.chart-section {
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.chart-wrapper {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* --- Chat Area --- */
+.chat-section {
+  background: var(--background);
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.message {
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  font-size: 15px;
+  line-height: 1.5;
+  position: relative;
+  animation: slideIn 0.3s ease-out;
+  word-break: break-word;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message.assistant {
+  align-self: flex-start;
+  background: var(--surface);
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+  border-bottom-left-radius: 4px;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: var(--primary);
+  color: white;
+  box-shadow: var(--shadow-sm);
+  border-bottom-right-radius: 4px;
+}
+
+.message-time {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 4px;
+  display: block;
+  text-align: right;
+}
+
+/* Thinking Accordion */
+.thinking-accordion {
+    margin-bottom: 8px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding-bottom: 6px;
+}
+
+.thinking-accordion summary {
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-weight: 500;
+    user-select: none;
+    list-style: none;
+}
+
+.thinking-content {
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-family: monospace;
+    white-space: pre-wrap;
+    background: var(--background);
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+}
+
+/* Typing Indicator */
+.typing-indicator span {
+    display: inline-block;
+    font-size: 1.2rem;
+    color: #bbb;
+    animation: typing 1.4s infinite both;
+    margin: 0 1px;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+    0% { opacity: 0.2; }
+    20% { opacity: 1; }
+    100% { opacity: 0.2; }
+}
+
+
+/* --- Input Area --- */
+.input-area {
+  background: var(--surface);
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.02);
+  position: relative;
+  z-index: 20;
+}
+
+.mode-toggle {
+  display: flex;
+  background: var(--background);
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  gap: 4px;
+}
+
+.mode-btn {
+  border: none;
+  background: transparent;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn.active {
+  background: var(--surface);
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+}
+
+.input-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.text-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+  background: var(--background);
+  font-family: inherit;
+}
+
+.text-input:focus {
+  border-color: var(--primary);
+  background: var(--surface);
+}
+
+.voice-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.voice-btn {
+  /* Previously width: 100% caused issues when side-by-side with preview */
+  flex: 1; 
+  padding: 12px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 24px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(41, 98, 255, 0.3);
+  transition: transform 0.1s, background-color 0.2s;
+  white-space: nowrap;
+}
+
+.voice-btn:active {
+  transform: scale(0.98);
+}
+
+.voice-btn.recording {
+    background-color: var(--chart-down);
+    box-shadow: 0 4px 12px rgba(242, 54, 69, 0.3);
+    animation: glow 1.5s infinite;
+    /* When recording, allow button to shrink if needed, or keep full? */
+    /* Let's make it auto width when recording so preview has space */
+    flex: 0 0 auto;
+    min-width: 100px;
+}
+
+@keyframes glow {
+    0% { box-shadow: 0 0 0 0 rgba(242, 54, 69, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(242, 54, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(242, 54, 69, 0); }
+}
+
+.voice-preview {
+    font-size: 0.9rem;
+    color: var(--text-main);
+    padding: 8px 12px;
+    background: var(--background);
+    border-radius: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Ensure it doesn't shrink to zero */
+    min-width: 0;
+    flex: 1;
+    /* Fix layout glitch */
+    margin-right: 8px;
+}
+
+.icon-btn {
+    background: var(--primary);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+.icon-btn:hover {
+    background: #1976D2;
+}
+
+/* --- Responsive Logic --- */
+
+/* Mobile Layout (< 768px) */
+@media (max-width: 767px) {
+  .main-container {
+    flex-direction: column;
+  }
+
+  .chart-section {
+    height: 45vh; /* Fixed height for chart */
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    z-index: 5;
+  }
+
+  .chat-section {
+    flex: 1;
+    border-left: none;
+    min-height: 0; /* Important for scroll */
+  }
+
+  .input-area {
+    padding: 12px 16px;
+  }
+  
+  /* Mobile specific adjustments */
+  .logo span {
+    display: none; /* Icon only on small screens if needed */
+  }
+  .logo::after {
+    content: 'PA Trainer';
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+  }
+}
+
+/* PC Layout (>= 768px) */
+@media (min-width: 768px) {
+  .main-container {
+    flex-direction: row;
+  }
+
+  .chart-section {
+    flex: 2; /* Chart takes 66% */
+    height: 100%;
+  }
+
+  .chat-section {
+    flex: 1; /* Chat takes 33% */
+    max-width: 450px;
+    min-width: 350px;
+    height: 100%;
+  }
+  
+  /* Enhance PC visuals */
+  .chat-section {
+    box-shadow: -2px 0 10px rgba(0,0,0,0.03);
+  }
+}
+
+/* --- Floating Controls (Chart) --- */
+.chart-controls {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  padding: 6px 12px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  z-index: 10;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.refresh-btn:hover {
+    opacity: 0.8;
+}
+
+/* --- History & Settings Panels (Adapted to new theme) --- */
+.history-panel, .settings-panel {
+    position: absolute;
+    top: 60px; /* Below header */
+    right: 20px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    z-index: 100;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.2s ease-out;
+    width: 300px;
+    max-height: 80vh;
+}
+
+/* History Panel Override for Mobile */
+@media (max-width: 767px) {
+    .history-panel, .settings-panel {
+        left: 20px;
+        right: 20px;
+        width: auto;
+    }
+}
+
+.history-panel h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--text-main);
+    font-size: 1.1rem;
+}
+
+.history-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.history-item {
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+    background: var(--surface);
+}
+
+.history-item:hover {
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.history-item.active {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.history-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+.history-date {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.delete-btn:hover {
+    color: var(--chart-down);
+}
+
+.settings-panel input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+}
+
+.hint {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Focus Indicator for Input */
+.focus-indicator {
+    background: #FFD700;
+    color: #333;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    white-space: nowrap;
+}
