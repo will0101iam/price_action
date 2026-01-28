@@ -210,149 +210,277 @@ body {
 }
 
 
-/* --- Input Area --- */
-.input-area {
-  background: var(--surface);
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.02);
-  position: relative;
-  z-index: 20;
+/* Markdown Content Styles */
+.message-content p {
+    margin: 0 0 8px 0;
+}
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+.message-content strong {
+    font-weight: 600;
+}
+.message-content ul, .message-content ol {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+.message-content li {
+    margin-bottom: 4px;
+}
+.message-content h3 {
+    font-size: 1.1em;
+    margin: 12px 0 8px 0;
+    font-weight: 700;
+}
+
+/* --- Input Area (New V2 Design) --- */
+.input-section {
+    background: var(--surface);
+    border-top: 1px solid rgba(0,0,0,0.05);
+    padding: 12px 16px 20px 16px; /* Extra bottom padding */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    z-index: 20;
+}
+
+/* 1. Mode Toggle (Pill) */
+.mode-toggle-container {
+    display: flex;
+    justify-content: center;
 }
 
 .mode-toggle {
-  display: flex;
-  background: var(--background);
-  padding: 4px;
-  border-radius: var(--radius-lg);
-  gap: 4px;
+    background: #F2F2F7;
+    padding: 4px;
+    border-radius: 20px;
+    display: flex;
+    position: relative;
 }
 
-.mode-btn {
-  border: none;
-  background: transparent;
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
+.toggle-btn {
+    padding: 6px 24px;
+    border-radius: 16px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.2s;
 }
 
-.mode-btn.active {
-  background: var(--surface);
-  color: var(--text-main);
-  box-shadow: var(--shadow-sm);
+.toggle-btn.active {
+    color: var(--text-main);
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-.input-wrapper {
-  flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* 2. Main Control Area */
+.controls-row {
+    display: flex;
+    align-items: flex-end; /* Align bottom for expanding text area */
+    gap: 12px;
+    position: relative;
+}
+
+/* Context/Focus Indicator */
+.focus-badge {
+    position: absolute;
+    top: -30px;
+    left: 0;
+    font-size: 11px;
+    background: #FFF9C4;
+    color: #F57F17;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+/* Text Input */
+.text-input-wrapper {
+    flex: 1;
+    background: #F2F2F7;
+    border-radius: 24px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 4px 16px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+.text-input-wrapper:focus-within {
+    background: white;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-soft);
 }
 
 .text-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  font-size: 15px;
-  outline: none;
-  transition: border-color 0.2s;
-  background: var(--background);
-  font-family: inherit;
-}
-
-.text-input:focus {
-  border-color: var(--primary);
-  background: var(--surface);
-}
-
-.voice-wrapper {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
     width: 100%;
+    border: none;
+    background: transparent;
+    font-size: 16px; /* Avoid iOS zoom */
+    outline: none;
+    resize: none;
+    max-height: 100px;
+    padding: 8px 0;
+    line-height: 1.4;
+    font-family: inherit;
 }
 
+/* Voice Button */
 .voice-btn {
-  /* Previously width: 100% caused issues when side-by-side with preview */
-  flex: 1; 
-  padding: 12px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 24px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(41, 98, 255, 0.3);
-  transition: transform 0.1s, background-color 0.2s;
-  white-space: nowrap;
-}
-
-.voice-btn:active {
-  transform: scale(0.98);
-}
-
-.voice-btn.recording {
-    background-color: var(--chart-down);
-    box-shadow: 0 4px 12px rgba(242, 54, 69, 0.3);
-    animation: glow 1.5s infinite;
-    /* When recording, allow button to shrink if needed, or keep full? */
-    /* Let's make it auto width when recording so preview has space */
-    flex: 0 0 auto;
-    min-width: 100px;
-}
-
-@keyframes glow {
-    0% { box-shadow: 0 0 0 0 rgba(242, 54, 69, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(242, 54, 69, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(242, 54, 69, 0); }
-}
-
-.voice-preview {
-    font-size: 0.9rem;
-    color: var(--text-main);
-    padding: 8px 12px;
-    background: var(--background);
-    border-radius: 18px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    /* Ensure it doesn't shrink to zero */
-    min-width: 0;
     flex: 1;
-    /* Fix layout glitch */
-    margin-right: 8px;
-}
-
-.icon-btn {
+    height: 48px;
+    border-radius: 24px;
     background: var(--primary);
     color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(41, 98, 255, 0.3);
+    transition: transform 0.1s, background 0.2s;
+    user-select: none;
+}
+.voice-btn:active {
+    transform: scale(0.96);
+}
+.voice-btn.recording {
+    background: var(--chart-down);
+    box-shadow: 0 4px 16px rgba(242, 54, 69, 0.4);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* Send Button */
+.send-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
     border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
+    transition: all 0.2s;
+}
+.send-btn svg {
+    width: 24px;
+    height: 24px;
+}
+.send-btn:hover {
+    transform: scale(1.05);
+}
+.send-btn:active {
+    transform: scale(0.95);
+}
+
+/* --- Voice Preview Card (The Fix) --- */
+.voice-result-card {
+    position: absolute;
+    bottom: 100%; /* Just above the input area */
+    left: 10px;
+    right: 10px;
+    margin-bottom: 10px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    padding: 16px;
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    gap: 12px;
+    animation: springUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(0,0,0,0.05);
+    z-index: 100;
+}
+
+.voice-result-card.visible {
+    display: flex;
+}
+
+@keyframes springUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.voice-text-content {
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-main);
+    max-height: 150px;
+    overflow-y: auto;
+    padding-right: 4px;
+    /* Style scrollbar */
+    scrollbar-width: thin;
+}
+
+.voice-card-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 12px;
+}
+
+.action-chip {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
     transition: background 0.2s;
 }
-.icon-btn:hover {
+
+.action-chip.cancel {
+    background: #F2F2F7;
+    color: var(--text-secondary);
+}
+.action-chip.cancel:hover {
+    background: #E5E5EA;
+}
+
+.action-chip.confirm {
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.action-chip.confirm:hover {
     background: #1976D2;
+}
+
+/* PC Specific Tweaks */
+@media (min-width: 768px) {
+    .voice-result-card {
+        width: auto;
+        max-width: 500px;
+        left: 50%;
+        transform: translateX(-50%);
+        right: auto;
+    }
+    /* Ensure animation respects the centered transform */
+    @keyframes springUp {
+        from { opacity: 0; transform: translate(-50%, 20px) scale(0.9); }
+        to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    }
 }
 
 /* --- Responsive Logic --- */

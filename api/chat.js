@@ -28,7 +28,7 @@ export default async function handler(req, res) {
         'X-Title': 'PA Trainer',
       },
       body: JSON.stringify({
-        model: model || "google/gemini-2.0-flash-001",
+        model: model || "google/gemini-3-flash-preview",
         messages,
         temperature: temperature || 0.7,
       }),
@@ -36,7 +36,9 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        return res.status(response.status).json({ 
+        // If upstream returns 401/403, convert to 502 to distinguish from our own Auth failure
+        const status = (response.status === 401 || response.status === 403) ? 502 : response.status;
+        return res.status(status).json({ 
             error: errorData.error?.message || `OpenRouter Error: ${response.status}` 
         });
     }

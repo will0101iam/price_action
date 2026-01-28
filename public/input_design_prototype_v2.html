@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Design V2 (Google/Apple Style)</title>
+    <style>
+        :root {
+            --primary: #007AFF; /* Apple Blue */
+            --primary-dim: #E5F1FF;
+            --surface: #FFFFFF;
+            --background: #F2F2F7; /* iOS Gray */
+            --border: #C6C6C8;
+            --text-main: #000000;
+            --text-secondary: #8E8E93;
+            --danger: #FF3B30;
+            --success: #34C759;
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #e5e5e5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        /* --- Device Frames for Demo --- */
+        .devices-wrapper {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .device-label {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-weight: 600;
+            color: #666;
+        }
+
+        /* Mobile Frame */
+        .mobile-frame {
+            width: 375px;
+            height: 667px;
+            background: var(--background);
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 12px solid #1a1a1a;
+        }
+
+        /* PC Frame */
+        .pc-frame {
+            width: 600px;
+            height: 400px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ccc;
+        }
+
+        /* --- Common Chat UI --- */
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: white;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* --- The New Input Design --- */
+        .input-section {
+            background: var(--surface);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            padding: 12px 16px 34px 16px; /* Extra bottom padding for "Home Indicator" feel */
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .pc-frame .input-section {
+            padding-bottom: 20px;
+        }
+
+        /* 1. Mode Toggle (Pill) */
+        .mode-toggle-container {
+            display: flex;
+            justify-content: center;
+        }
+        
+        .mode-toggle {
+            background: #F2F2F7;
+            padding: 4px;
+            border-radius: 20px;
+            display: flex;
+            position: relative;
+        }
+
+        .toggle-btn {
+            padding: 6px 24px;
+            border-radius: 16px;
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            z-index: 2;
+            transition: color 0.2s;
+        }
+
+        .toggle-btn.active {
+            color: var(--text-main);
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        /* 2. Main Control Area */
+        .controls-row {
+            display: flex;
+            align-items: flex-end; /* Align bottom for expanding text area */
+            gap: 12px;
+            position: relative;
+        }
+
+        /* Context/Focus Indicator (Optional) */
+        .focus-badge {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            font-size: 11px;
+            background: #FFF9C4;
+            color: #F57F17;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        /* Text Input */
+        .text-input-wrapper {
+            flex: 1;
+            background: #F2F2F7;
+            border-radius: 24px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            padding: 4px 16px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .text-input-wrapper:focus-within {
+            background: white;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-dim);
+        }
+
+        .text-input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-size: 16px; /* Avoid iOS zoom */
+            outline: none;
+            resize: none;
+            max-height: 100px;
+            padding: 8px 0;
+            line-height: 1.4;
+        }
+
+        /* Voice Button */
+        .voice-btn {
+            flex: 1;
+            height: 48px;
+            border-radius: 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            transition: transform 0.1s, background 0.2s;
+        }
+        .voice-btn:active {
+            transform: scale(0.96);
+        }
+        .voice-btn.recording {
+            background: var(--danger);
+            box-shadow: 0 4px 16px rgba(255, 59, 48, 0.4);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* Send Button */
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* --- THE MAGIC: Voice Preview Card --- */
+        /* Instead of trying to fit text in the bar, we pop up a card */
+        .voice-result-card {
+            position: absolute;
+            bottom: 100%; /* Just above the input area */
+            left: 10px;
+            right: 10px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            padding: 16px;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            gap: 12px;
+            animation: springUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+        
+        .voice-result-card.visible {
+            display: flex;
+        }
+
+        @keyframes springUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .voice-text-content {
+            font-size: 16px;
+            line-height: 1.5;
+            color: var(--text-main);
+            max-height: 150px;
+            overflow-y: auto;
+            padding-right: 4px;
+            /* Style scrollbar */
+            scrollbar-width: thin;
+        }
+
+        .voice-card-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 12px;
+        }
+
+        .action-chip {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        .action-chip.cancel {
+            background: #F2F2F7;
+            color: var(--text-secondary);
+        }
+        .action-chip.cancel:hover {
+            background: #E5E5EA;
+        }
+
+        .action-chip.confirm {
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .action-chip.confirm:hover {
+            background: #0062CC;
+        }
+
+        /* Overlay to dim background when preview is open */
+        .dim-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(2px);
+            z-index: 5;
+            display: none;
+        }
+        .dim-overlay.visible {
+            display: block;
+        }
+
+        /* Icon Helper */
+        .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    </style>
+</head>
+<body>
+
+    <div class="devices-wrapper">
+        
+        <!-- Mobile Mockup -->
+        <div class="mobile-frame">
+            <div class="device-label">Mobile View</div>
+            <div class="dim-overlay" id="mobileOverlay"></div>
+            
+            <div class="chat-area" id="mobileChat">
+                <div class="message assistant">Hello! I've updated the design. Try the voice input.</div>
+            </div>
+
+            <div class="input-section">
+                <!-- 1. The Mode Toggle (Preserved as requested) -->
+                <div class="mode-toggle-container">
+                    <div class="mode-toggle">
+                        <button class="toggle-btn" id="m_btnVoice" onclick="setMode('mobile', 'voice')">Voice</button>
+                        <button class="toggle-btn active" id="m_btnText" onclick="setMode('mobile', 'text')">Text</button>
+                    </div>
+                </div>
+
+                <!-- 2. Controls -->
+                <div class="controls-row">
+                    <!-- Text Input Mode -->
+                    <div class="text-input-wrapper" id="m_textWrapper">
+                        <textarea class="text-input" placeholder="Type your analysis..." rows="1"></textarea>
+                    </div>
+
+                    <!-- Voice Input Mode (Hidden initially) -->
+                    <button class="voice-btn" id="m_voiceBtn" style="display: none;" 
+                        onmousedown="startRecord('mobile')" onmouseup="stopRecord('mobile')"
+                        ontouchstart="startRecord('mobile')" ontouchend="stopRecord('mobile')">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                        Hold to Speak
+                    </button>
+
+                    <!-- Send Button (Always visible for text, maybe hidden for voice idle?) -->
+                    <button class="send-btn" id="m_sendBtn">
+                        <svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+
+                <!-- 3. Voice Result Card (The Fix) -->
+                <div class="voice-result-card" id="m_resultCard">
+                    <div class="voice-text-content" id="m_previewText">
+                        Listening...
+                    </div>
+                    <div class="voice-card-footer">
+                        <button class="action-chip cancel" onclick="cancelPreview('mobile')">Cancel</button>
+                        <button class="action-chip confirm" onclick="sendPreview('mobile')">
+                            Send <svg class="icon" style="width:16px;height:16px;" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PC Mockup -->
+        <div class="pc-frame">
+            <div class="device-label">PC View</div>
+            <div class="dim-overlay" id="pcOverlay"></div>
+
+            <div class="chat-area" id="pcChat">
+                <div class="message assistant">PC Layout is wider and more spacious.</div>
+            </div>
+
+            <div class="input-section">
+                <!-- 1. The Mode Toggle -->
+                <div class="mode-toggle-container">
+                    <div class="mode-toggle">
+                        <button class="toggle-btn" id="p_btnVoice" onclick="setMode('pc', 'voice')">Voice</button>
+                        <button class="toggle-btn active" id="p_btnText" onclick="setMode('pc', 'text')">Text</button>
+                    </div>
+                </div>
+
+                <!-- 2. Controls -->
+                <div class="controls-row">
+                    <!-- Text Input Mode -->
+                    <div class="text-input-wrapper" id="p_textWrapper">
+                        <textarea class="text-input" placeholder="Type your analysis (Shift+Enter for new line)..." rows="1"></textarea>
+                    </div>
+
+                    <!-- Voice Input Mode (Hidden initially) -->
+                    <button class="voice-btn" id="p_voiceBtn" style="display: none;" 
+                        onmousedown="startRecord('pc')" onmouseup="stopRecord('pc')">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                        Hold Space or Click to Speak
+                    </button>
+
+                    <!-- Send Button -->
+                    <button class="send-btn" id="p_sendBtn">
+                        <svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+
+                <!-- 3. Voice Result Card -->
+                <div class="voice-result-card" id="p_resultCard" style="bottom: 90px; left: 20px; right: 20px; width: auto; max-width: 500px; margin: 0 auto;">
+                    <div class="voice-text-content" id="p_previewText">
+                        Listening...
+                    </div>
+                    <div class="voice-card-footer">
+                        <button class="action-chip cancel" onclick="cancelPreview('pc')">Cancel</button>
+                        <button class="action-chip confirm" onclick="sendPreview('pc')">
+                            Send <svg class="icon" style="width:16px;height:16px;" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // State
+        const state = {
+            mobile: { mode: 'text', recording: false },
+            pc: { mode: 'text', recording: false }
+        };
+
+        function setMode(device, mode) {
+            state[device].mode = mode;
+            
+            const btnVoice = document.getElementById(device === 'mobile' ? 'm_btnVoice' : 'p_btnVoice');
+            const btnText = document.getElementById(device === 'mobile' ? 'm_btnText' : 'p_btnText');
+            const textWrapper = document.getElementById(device === 'mobile' ? 'm_textWrapper' : 'p_textWrapper');
+            const voiceBtn = document.getElementById(device === 'mobile' ? 'm_voiceBtn' : 'p_voiceBtn');
+            const sendBtn = document.getElementById(device === 'mobile' ? 'm_sendBtn' : 'p_sendBtn');
+
+            if (mode === 'voice') {
+                btnVoice.classList.add('active');
+                btnText.classList.remove('active');
+                textWrapper.style.display = 'none';
+                voiceBtn.style.display = 'flex';
+                sendBtn.style.display = 'none'; // Hide main send btn in voice mode (use card)
+            } else {
+                btnText.classList.add('active');
+                btnVoice.classList.remove('active');
+                textWrapper.style.display = 'flex';
+                voiceBtn.style.display = 'none';
+                sendBtn.style.display = 'flex';
+            }
+        }
+
+        function startRecord(device) {
+            // Prevent default touch actions
+            event.preventDefault(); 
+            if (state[device].recording) return;
+
+            state[device].recording = true;
+            const voiceBtn = document.getElementById(device === 'mobile' ? 'm_voiceBtn' : 'p_voiceBtn');
+            const resultCard = document.getElementById(device === 'mobile' ? 'm_resultCard' : 'p_resultCard');
+            const overlay = document.getElementById(device === 'mobile' ? 'mobileOverlay' : 'pcOverlay');
+            const previewText = document.getElementById(device === 'mobile' ? 'm_previewText' : 'p_previewText');
+
+            voiceBtn.classList.add('recording');
+            voiceBtn.innerText = "Listening...";
+            
+            // Show Card immediately
+            resultCard.classList.add('visible');
+            if(overlay) overlay.classList.add('visible');
+            previewText.innerText = "Listening...";
+
+            // Simulate Typing
+            setTimeout(() => {
+                if(state[device].recording) {
+                    previewText.innerText = "I noticed a bearish engulfing pattern on the 4H chart...";
+                }
+            }, 800);
+            setTimeout(() => {
+                if(state[device].recording) {
+                    previewText.innerText = "I noticed a bearish engulfing pattern on the 4H chart, which usually indicates a reversal. Also, the RSI is overbought.";
+                }
+            }, 2000);
+        }
+
+        function stopRecord(device) {
+            event.preventDefault();
+            if (!state[device].recording) return;
+
+            state[device].recording = false;
+            const voiceBtn = document.getElementById(device === 'mobile' ? 'm_voiceBtn' : 'p_voiceBtn');
+            
+            voiceBtn.classList.remove('recording');
+            voiceBtn.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg> Hold to Speak';
+
+            // Card stays open for review!
+        }
+
+        function cancelPreview(device) {
+            const resultCard = document.getElementById(device === 'mobile' ? 'm_resultCard' : 'p_resultCard');
+            const overlay = document.getElementById(device === 'mobile' ? 'mobileOverlay' : 'pcOverlay');
+            
+            resultCard.classList.remove('visible');
+            if(overlay) overlay.classList.remove('visible');
+        }
+
+        function sendPreview(device) {
+            const previewText = document.getElementById(device === 'mobile' ? 'm_previewText' : 'p_previewText');
+            const chat = document.getElementById(device === 'mobile' ? 'mobileChat' : 'pcChat');
+            
+            const msg = document.createElement('div');
+            msg.className = 'message user';
+            msg.innerText = previewText.innerText;
+            chat.appendChild(msg);
+
+            cancelPreview(device);
+        }
+
+        // Init
+        setMode('mobile', 'text');
+    </script>
+</body>
+</html>

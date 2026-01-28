@@ -3,6 +3,7 @@ import { generateData, getRandomSlice } from './utils/dataGenerator'
 import { saveSession, getHistory, createSessionId, deleteSession } from './utils/historyManager'
 import { ChartComponent } from './components/ChartComponent'
 import { LockScreen } from './components/LockScreen'
+import ReactMarkdown from 'react-markdown';
 import './App.css'
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
   const [apiKey, setApiKey] = useState(import.meta.env.VITE_OPENROUTER_API_KEY || '');
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPreviewCard, setShowPreviewCard] = useState(false); // New: Control Voice Preview Card
   const recognitionRef = useRef(null);
 
   const [messages, setMessages] = useState([]); // Array of { role: 'user' | 'assistant', content: string, thinking?: string }
@@ -69,6 +71,8 @@ function App() {
       recognitionRef.current.onstart = () => {
           console.log("Speech recognition started");
           setIsRecording(true);
+          setShowPreviewCard(true); // Show card when recording starts
+          recognitionRef.current.hasRetried = false; // Reset retry flag
       };
       
       recognitionRef.current.onend = () => {
@@ -111,11 +115,32 @@ function App() {
 
       recognitionRef.current.onerror = (event) => {
         console.error("Speech recognition error", event.error);
+        
+        // Auto-retry for network errors (one attempt)
+        if (event.error === 'network' && !recognitionRef.current.hasRetried) {
+             console.log("Network error detected, attempting auto-retry...");
+             recognitionRef.current.hasRetried = true;
+             setTimeout(() => {
+                 try {
+                     // Only restart if we still think we should be recording, 
+                     // or just let the user try again manually to be safe.
+                     // But here we try to recover the session.
+                     recognitionRef.current.start();
+                 } catch(e) { console.log("Retry failed", e); }
+             }, 1000);
+             return;
+        }
+
         if (event.error === 'no-speech') {
             return; 
         }
-        // Visual feedback for error could be added here
-        setAiFeedback(`Voice Error: ${event.error}`);
+        
+        // Visual feedback
+        let msg = `Voice Error: ${event.error}`;
+        if (event.error === 'network') {
+            msg = "语音服务连接失败，请检查网络 (Google Speech API)";
+        }
+        setAiFeedback(msg);
         setIsRecording(false);
       };
     } else {
@@ -124,7 +149,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (sessionId && currentSlice.length > 0) {
+    if (sessionId && currentSlice.length > 0 && messages.length > 0) {
       const title = messages.find(m => m.role === 'user')?.content.substring(0, 20) || `Session ${new Date(parseInt(sessionId.substring(0, 8), 36) || Date.now()).toLocaleTimeString()}`;
       saveSession({
         id: sessionId,
@@ -168,11 +193,13 @@ function App() {
     if (isRecording) {
       setIsRecording(false); // Update state first to stop auto-restart
       recognitionRef.current.stop();
+      // Keep card open for review!
     } else {
       setTranscript(''); // Clear previous
       setInterimTranscript('');
       recognitionRef.current.start();
       setIsRecording(true);
+      setShowPreviewCard(true); // Show card
       
       // Diagnostic Timeout
       setTimeout(() => {
@@ -187,9 +214,21 @@ function App() {
     }
   };
 
+  const handleVoiceCancel = () => {
+    setTranscript('');
+    setInterimTranscript('');
+    setShowPreviewCard(false);
+    if (isRecording) {
+        setIsRecording(false);
+        recognitionRef.current.stop();
+    }
+  };
+
   const handleVoiceSubmit = () => {
-    if (transcript.trim() || interimTranscript.trim()) {
-        analyzeWithAI(transcript + interimTranscript);
+    const text = transcript + interimTranscript;
+    if (text.trim()) {
+        analyzeWithAI(text);
+        setShowPreviewCard(false);
     }
   };
 
@@ -287,7 +326,7 @@ ${focusPoint}
                     'X-Title': 'Walk & Trade',
                 },
                 body: JSON.stringify({
-                    model: "google/gemini-2.0-flash-001",
+                    model: "google/gemini-3-flash-preview",
                     messages: apiMessages,
                     temperature: 0.7
                 }),
@@ -315,7 +354,8 @@ ${focusPoint}
             const errorData = await response.json().catch(() => ({}));
             
             // Handle Auth Failure
-            if (response.status === 401) {
+            if (response.status === 401 && !import.meta.env.DEV) {
+                // Only logout in Production if 401 (which now comes from our Backend Auth)
                 setIsAuthorized(false);
                 localStorage.removeItem('pa_trainer_auth');
                 throw new Error("Password Incorrect or Session Expired. Please login again.");
@@ -362,7 +402,7 @@ ${focusPoint}
   }
 
   return (
-    <div className="app-container main-layout">
+    <>
       {/* Header */}
       <header className="app-header">
           <div className="logo">
@@ -432,8 +472,6 @@ ${focusPoint}
           {/* Chart Section */}
           <div className="chart-section">
               <div className="chart-controls">
-                  <span>BTC/USDT</span>
-                  <span style={{color:'#ddd'}}>|</span>
                   <div className="refresh-btn" onClick={handleNewChart}>
                       <span>🔄 Random Chart</span>
                   </div>
@@ -467,7 +505,7 @@ ${focusPoint}
                               </details>
                           )}
                           <div className="message-content">
-                              {msg.content}
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
                           </div>
                       </div>
                   ))}
@@ -482,77 +520,84 @@ ${focusPoint}
                   <div ref={messagesEndRef} />
               </div>
 
-              {/* Input Area */}
-              <div className="input-area">
-                  <div className="mode-toggle">
-                      <button 
-                          className={`mode-btn ${inputMode === 'voice' ? 'active' : ''}`}
-                          onClick={() => setInputMode('voice')}
-                      >
-                          Voice
-                      </button>
-                      <button 
-                          className={`mode-btn ${inputMode === 'text' ? 'active' : ''}`}
-                          onClick={() => setInputMode('text')}
-                      >
-                          Text
-                      </button>
+              {/* Input Area (New V2 Design) */}
+              <div className="input-section">
+                  {/* 1. Mode Toggle */}
+                  <div className="mode-toggle-container">
+                      <div className="mode-toggle">
+                          <button 
+                              className={`toggle-btn ${inputMode === 'voice' ? 'active' : ''}`}
+                              onClick={() => setInputMode('voice')}
+                          >
+                              Voice
+                          </button>
+                          <button 
+                              className={`toggle-btn ${inputMode === 'text' ? 'active' : ''}`}
+                              onClick={() => setInputMode('text')}
+                          >
+                              Text
+                          </button>
+                      </div>
                   </div>
                   
-                  <div className="input-wrapper">
-                      {selectedCandle && <span className="focus-indicator">#{selectedCandle.id}</span>}
+                  {/* 2. Controls */}
+                  <div className="controls-row">
+                      {selectedCandle && <span className="focus-badge">#{selectedCandle.id}</span>}
 
-                      {inputMode === 'voice' ? (
+                      {inputMode === 'text' ? (
                           <>
-                            <button 
-                                className={`voice-btn ${isRecording ? 'recording' : ''}`} 
-                                onClick={toggleRecording}
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                                    <line x1="12" y1="19" x2="12" y2="23"></line>
-                                    <line x1="8" y1="23" x2="16" y2="23"></line>
-                                </svg>
-                                {isRecording ? 'Stop' : 'Hold to Speak'}
+                            <div className="text-input-wrapper">
+                                <textarea 
+                                    className="text-input" 
+                                    placeholder="Type your analysis (Shift+Enter for new line)..."
+                                    rows={1}
+                                    value={inputText}
+                                    onChange={(e) => setInputText(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if(e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleTextSubmit();
+                                        }
+                                    }}
+                                />
+                            </div>
+                            <button className="send-btn" onClick={handleTextSubmit}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                             </button>
-                            {(transcript || interimTranscript || isRecording) && (
-                                <div className="voice-preview">
-                                    {transcript + interimTranscript || "Listening..."}
-                                </div>
-                            )}
-                            {(transcript || interimTranscript) && !isRecording && (
-                                <button className="icon-btn" onClick={handleVoiceSubmit}>
-                                    ➤
-                                </button>
-                            )}
                           </>
                       ) : (
-                          <>
-                            <input 
-                                type="text" 
-                                className="text-input" 
-                                placeholder="Type your analysis..."
-                                value={inputText}
-                                onChange={(e) => setInputText(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if(e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleTextSubmit();
-                                    }
-                                }}
-                            />
-                            <button className="icon-btn" onClick={handleTextSubmit}>
-                                ➤
-                            </button>
-                          </>
+                          <button 
+                              className={`voice-btn ${isRecording ? 'recording' : ''}`} 
+                              onMouseDown={(e) => { e.preventDefault(); toggleRecording(); }}
+                              onTouchStart={(e) => { e.preventDefault(); toggleRecording(); }}
+                              // Note: We use toggle behavior instead of hold-to-speak for simplicity with PC mouse
+                              // But to match prototype 'hold', we could use start/stop. 
+                              // For better UX across devices, click-to-start/click-to-stop is often safer than hold.
+                              // Let's stick to click-toggle for now as implemented in logic.
+                          >
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                              {isRecording ? 'Listening...' : 'Tap to Speak'}
+                          </button>
                       )}
+                  </div>
+
+                  {/* 3. Voice Result Card (The Fix) */}
+                  <div className={`voice-result-card ${showPreviewCard ? 'visible' : ''}`}>
+                      <div className="voice-text-content">
+                          {transcript + interimTranscript || "Listening..."}
+                      </div>
+                      <div className="voice-card-footer">
+                          <button className="action-chip cancel" onClick={handleVoiceCancel}>Cancel</button>
+                          <button className="action-chip confirm" onClick={handleVoiceSubmit}>
+                              Send <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                          </button>
+                      </div>
                   </div>
               </div>
           </div>
 
       </div>
-    </div>
+    </>
   )
 }
 
