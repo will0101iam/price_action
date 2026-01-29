@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createChart, ColorType, CandlestickSeries, createSeriesMarkers } from 'lightweight-charts';
 
-export const ChartComponent = ({ data, onCandleSelect }) => {
+export const ChartComponent = ({ data }) => {
     const chartContainerRef = useRef();
     const chartRef = useRef(null);
     const seriesRef = useRef(null);
-    const [selectedIndex, setSelectedIndex] = useState(null);
 
     useEffect(() => {
         if (!chartContainerRef.current) return;
@@ -45,11 +44,11 @@ export const ChartComponent = ({ data, onCandleSelect }) => {
         resizeObserver.observe(chartContainerRef.current);
 
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
-            upColor: '#26a69a',
-            downColor: '#ef5350',
+            upColor: '#F23645', // Red for Rise
+            downColor: '#089981', // Green for Fall
             borderVisible: false,
-            wickUpColor: '#26a69a',
-            wickDownColor: '#ef5350',
+            wickUpColor: '#F23645',
+            wickDownColor: '#089981',
         });
         seriesRef.current = candlestickSeries;
 
@@ -67,11 +66,8 @@ export const ChartComponent = ({ data, onCandleSelect }) => {
                 text: `#${d.id}`,
             }));
         
-        // Use createSeriesMarkers plugin if available, or fallback? 
-        // Assuming createSeriesMarkers is the correct API for this version based on previous code.
-        let markersPlugin = null;
         try {
-            markersPlugin = createSeriesMarkers(candlestickSeries, baseMarkers);
+            createSeriesMarkers(candlestickSeries, baseMarkers);
         } catch (e) {
             console.error("Failed to create markers plugin", e);
         }
@@ -79,47 +75,15 @@ export const ChartComponent = ({ data, onCandleSelect }) => {
         // Fit content
         chart.timeScale().fitContent();
 
-        // Click Handler
-        chart.subscribeClick((param) => {
-            if (param.time) {
-                const clickedCandle = data.find(d => d.time === param.time);
-                if (clickedCandle) {
-                    setSelectedIndex(clickedCandle.id);
-                    onCandleSelect(clickedCandle);
-                    
-                    // Update markers to highlight selection
-                    const newMarkers = [
-                        ...baseMarkers,
-                        {
-                            time: clickedCandle.time,
-                            position: 'aboveBar',
-                            color: '#FFD700', // Gold
-                            shape: 'arrowDown',
-                            text: `Select #${clickedCandle.id}`,
-                            size: 2,
-                        }
-                    ];
-                    if (markersPlugin) {
-                        markersPlugin.setMarkers(newMarkers);
-                    }
-                }
-            }
-        });
-
         return () => {
             resizeObserver.disconnect();
             chart.remove();
         };
-    }, [data, onCandleSelect]);
+    }, [data]);
 
     return (
         <div className="chart-wrapper" style={{ height: '100%', width: '100%' }}>
             <div ref={chartContainerRef} style={{ position: 'relative', width: '100%', height: '100%' }} />
-            {selectedIndex && (
-                <div className="selection-info">
-                    Selected Candle: <strong>#{selectedIndex}</strong>
-                </div>
-            )}
         </div>
     );
 };

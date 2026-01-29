@@ -21,7 +21,6 @@ function App() {
   const [historyList, setHistoryList] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   
-  const [selectedCandle, setSelectedCandle] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [inputMode, setInputMode] = useState('voice'); // 'voice' | 'text'
   const [inputText, setInputText] = useState('');
@@ -165,7 +164,6 @@ function App() {
   const handleNewChart = () => {
     setCurrentSlice(processSlice(getRandomSlice(fullData, 30)));
     setSessionId(createSessionId());
-    setSelectedCandle(null);
     setTranscript('');
     setInputText('');
     setMessages([]); // Clear chat history
@@ -253,8 +251,8 @@ function App() {
     
     const finalInput = manualInput || transcript;
 
-    if (!finalInput && !selectedCandle) {
-        setAiFeedback("Please select a candle or say/type something first.");
+    if (!finalInput) {
+        setAiFeedback("Please say or type something first.");
         return;
     }
 
@@ -262,9 +260,7 @@ function App() {
       `Index: ${c.id} | O:${c.open} H:${c.high} L:${c.low} C:${c.close}`
     ).join('\n');
 
-    const focusPoint = selectedCandle 
-      ? `User Focus: Candle #${selectedCandle.id} (Data: O:${selectedCandle.open}, C:${selectedCandle.close})` 
-      : "User Focus: General Chart";
+    const focusPoint = "User Focus: General Chart";
 
     const systemPrompt = `你是一位专业的价格行为学（Price Action）交易教练。请根据提供的K线数据分析用户的观点。
 1. **必须使用中文回答**。
@@ -483,7 +479,6 @@ ${focusPoint}
               <div className="chart-wrapper">
                 <ChartComponent 
                   data={currentSlice} 
-                  onCandleSelect={setSelectedCandle} 
                 />
               </div>
           </div>
@@ -558,8 +553,6 @@ ${focusPoint}
                   
                   {/* 2. Controls */}
                   <div className="controls-row">
-                      {selectedCandle && <span className="focus-badge">#{selectedCandle.id}</span>}
-
                       {inputMode === 'text' ? (
                           <>
                             <div className="text-input-wrapper" onClick={() => setIsInputCollapsed(false)}>
