@@ -46,7 +46,8 @@ body {
   justify-content: space-between;
   padding: 0 20px;
   flex-shrink: 0;
-  z-index: 10;
+  z-index: 100; /* Increased Z-Index for Mobile Visibility */
+  position: relative; /* Ensure z-index works */
 }
 
 .logo {
@@ -243,12 +244,71 @@ body {
     gap: 16px;
     position: relative;
     z-index: 20;
+    transition: all 0.3s ease; /* Smooth collapse transition */
+}
+
+/* Collapsed State */
+.input-section.collapsed {
+    padding-top: 0;
+    padding-bottom: 0;
+    height: 12px; /* Minimal height just to show the expand handle */
+    overflow: visible; /* Allow the handle to stick out */
+    background: transparent; /* Make it transparent */
+    border-top: none; /* Hide border */
+}
+
+/* Hide ALL content inside input section when collapsed, except the toggle button */
+.input-section.collapsed .mode-toggle-container,
+.input-section.collapsed .controls-row,
+.input-section.collapsed .voice-result-card {
+    display: none;
+    opacity: 0;
+}
+
+/* Collapse Toggle Button (Chevron) */
+.collapse-toggle {
+    position: absolute;
+    top: -14px;
+    right: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px; /* Pill shape when floating */
+    width: 32px;
+    height: 32px; /* Larger hit area */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    z-index: 30;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Float shadow */
+    transition: all 0.3s ease;
+}
+
+.input-section.collapsed .collapse-toggle {
+    top: -40px; /* Float above the now-hidden input area */
+    right: 20px;
+    background: var(--primary); /* Highlight it */
+    color: white;
+    border-color: var(--primary);
+}
+
+.collapse-toggle:hover {
+    color: var(--primary);
+    background: #fcfcfc;
+}
+
+.input-section.collapsed .collapse-toggle:hover {
+    color: white;
+    background: #1976D2;
 }
 
 /* 1. Mode Toggle (Pill) */
 .mode-toggle-container {
     display: flex;
     justify-content: center;
+    transition: all 0.3s ease; /* Smooth hide transition */
 }
 
 .mode-toggle {

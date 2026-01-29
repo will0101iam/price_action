@@ -31,7 +31,8 @@ function App() {
   const [apiKey, setApiKey] = useState(import.meta.env.VITE_OPENROUTER_API_KEY || '');
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPreviewCard, setShowPreviewCard] = useState(false); // New: Control Voice Preview Card
+  const [showPreviewCard, setShowPreviewCard] = useState(false);
+  const [isInputCollapsed, setIsInputCollapsed] = useState(false); // New: Collapse State
   const recognitionRef = useRef(null);
 
   const [messages, setMessages] = useState([]); // Array of { role: 'user' | 'assistant', content: string, thinking?: string }
@@ -229,12 +230,14 @@ function App() {
     if (text.trim()) {
         analyzeWithAI(text);
         setShowPreviewCard(false);
+        setIsInputCollapsed(true); // Auto-collapse on send
     }
   };
 
   const handleTextSubmit = () => {
     if (inputText.trim()) {
         analyzeWithAI(inputText);
+        setIsInputCollapsed(true); // Auto-collapse on send
     }
   };
 
@@ -521,7 +524,20 @@ ${focusPoint}
               </div>
 
               {/* Input Area (New V2 Design) */}
-              <div className="input-section">
+              <div className={`input-section ${isInputCollapsed ? 'collapsed' : ''}`}>
+                  {/* Toggle Collapse Button */}
+                  <button 
+                      className="collapse-toggle" 
+                      onClick={() => setIsInputCollapsed(!isInputCollapsed)}
+                      title={isInputCollapsed ? "Expand" : "Collapse"}
+                  >
+                      {isInputCollapsed ? (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6"/></svg>
+                      ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+                      )}
+                  </button>
+
                   {/* 1. Mode Toggle */}
                   <div className="mode-toggle-container">
                       <div className="mode-toggle">
@@ -546,7 +562,7 @@ ${focusPoint}
 
                       {inputMode === 'text' ? (
                           <>
-                            <div className="text-input-wrapper">
+                            <div className="text-input-wrapper" onClick={() => setIsInputCollapsed(false)}>
                                 <textarea 
                                     className="text-input" 
                                     placeholder="Type your analysis (Shift+Enter for new line)..."
@@ -559,6 +575,7 @@ ${focusPoint}
                                             handleTextSubmit();
                                         }
                                     }}
+                                    onFocus={() => setIsInputCollapsed(false)} // Auto-expand on focus
                                 />
                             </div>
                             <button className="send-btn" onClick={handleTextSubmit}>
@@ -568,8 +585,8 @@ ${focusPoint}
                       ) : (
                           <button 
                               className={`voice-btn ${isRecording ? 'recording' : ''}`} 
-                              onMouseDown={(e) => { e.preventDefault(); toggleRecording(); }}
-                              onTouchStart={(e) => { e.preventDefault(); toggleRecording(); }}
+                              onMouseDown={(e) => { e.preventDefault(); toggleRecording(); setIsInputCollapsed(false); }}
+                              onTouchStart={(e) => { e.preventDefault(); toggleRecording(); setIsInputCollapsed(false); }}
                               // Note: We use toggle behavior instead of hold-to-speak for simplicity with PC mouse
                               // But to match prototype 'hold', we could use start/stop. 
                               // For better UX across devices, click-to-start/click-to-stop is often safer than hold.
